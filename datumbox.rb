@@ -7,7 +7,7 @@ require 'json'
 #
 # Create an instance of this class calling "Datumbox.create(api_key)".
 #
-# Authors: Pedro Damian Kostelec and Marlon Silva Carvalho
+# Author: Pedro Damian Kostelec
 # 
 # Some of the available methods are:
 # (See the API documentation [http://www.datumbox.com/api-sandbox/] for an exhaustive list of methods)
@@ -57,13 +57,14 @@ class Datumbox
     Datumbox.new(api_key)
   end
 
-  def request(method, *params)
-    RestClient.post "#{BASE_URI}#{API_VERSION}/#{method}.json", api_key: @api_key, text: params[0]
+  def request(method, opts)
+    options = { api_key: @api_key }.merge opts
+    RestClient.post "#{BASE_URI}#{API_VERSION}/#{method}.json", options
   end
 
-  def method_missing(method_id, *params, &block)
+  def method_missing(method_id, opts, &block)
     begin
-      response = request(method_id.id2name.camelize, params)
+      response = request(method_id.id2name.camelize, opts)
       
       # If the response is successful, and that API method exists
       # and defines the method, for any future calls to be faster
