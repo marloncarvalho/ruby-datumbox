@@ -17,7 +17,7 @@ datumbox.language_detection(text: 'El paraguas es de mi color favorito')
 datumbox.response = subject.keyword_extraction(text: 'Banana split', n: 1)
 
 datumbox.document_similarity(original: 'This document is unique.',
-         					 copy: 'No, bastard! This document here is unique!.'')
+         					 copy: 'No, bastard! This document here is unique!.')
 
 ## Methods
 
