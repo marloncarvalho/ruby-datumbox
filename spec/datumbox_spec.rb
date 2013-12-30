@@ -24,7 +24,8 @@ describe Datumbox do
 
 	describe 'keyword extraction' do
 		it "should not replay with error due to missing parameters" do
-			response = subject.keyword_extraction text: 'Banana split', n: 1
+			response = subject.keyword_extraction text: 'Banana split',
+			                                      n: 1
 			json = JSON.parse response
 			json['output']['status'].should be 1
 		end
