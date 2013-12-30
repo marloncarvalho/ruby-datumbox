@@ -1,4 +1,5 @@
 require 'rest_client'
+require 'json'
 
 # Datumbox Wrapper.
 # Before use it, you must register yourself at Datumbox site
@@ -6,9 +7,45 @@ require 'rest_client'
 #
 # Create an instance of this class calling "Datumbox.create(api_key)".
 #
-# Author: Marlon Silva Carvalho
+# Authors: Pedro Damian Kostelec and Marlon Silva Carvalho
+# 
+# Some of the available methods are:
+# (See the API documentation [http://www.datumbox.com/api-sandbox/] for an exhaustive list of methods)
+#
+# sentiment_analysis(text)
+#   Classifies "text" as positive, negative or neutral.
+#
+# subjective_analysis(text)
+#   Categorizes "text" as subjective or objective based on writing style.
+#   Texts that express personal opinions are labeled as subjective and the others as objective.
+#
+# spam_detection(text)
+#   Labels documents as spam or nospam by taking into account their context.
+#
+# adult_content_detection(text)
+#   Classifies documents as adult or noadult based on their context.
+#
+# topic_classification(text)
+#   Assigns documents in 12 thematic categories based on ther keywords, idioms and jargon.
+#
+# language_detection(text)
+#   Identifies the natural language of the given text based on its words and context.
+#
+# twitter_sentiment_analysis(text)
+#   Classifies "text" as positive, negative or neutral.
+#
+# keyword_extraction(text, n)
+#   Enables you to extract from an arbitrary document all the keywords and word
+#   combinations along with their occurrences in the text.
+#
+# document_similarity(original, copy)
+#   Estimates the degree of similarity between two documents.
+
 class Datumbox
 
+  BASE_URI = 'http://api.datumbox.com/'
+  API_VERSION = '1.0'
+ 
   def initialize(api_key)
     @api_key = api_key
   end
@@ -20,64 +57,34 @@ class Datumbox
     Datumbox.new(api_key)
   end
 
-  # Classifies "text" as positive, negative or neutral.
-  #
-  def sentiment_analysis(text)
-    RestClient.post "http://api.datumbox.com/1.0/SentimentAnalysis.json", :api_key => @api_key, :text => text
+  def request(method, *params)
+    RestClient.post "#{BASE_URI}#{API_VERSION}/#{method}.json", api_key: @api_key, text: params[0]
   end
 
-  # Categorizes "text" as subjective or objective based on writing style.
-  # Texts that express personal opinions are labeled as subjective and the others as objective.
-  #
-  def subjective_analysis(text)
-    RestClient.post "http://api.datumbox.com/1.0/SubjectivityAnalysis.json", :api_key => @api_key, :text => text
-  end
+  def method_missing(method_id, *params, &block)
+    begin
+      response = request(method_id.id2name.camelize, params)
+      
+      # If the response is successful, and that API method exists
+      # and defines the method, for any future calls to be faster
+      json = JSON.parse(response)
+      self.class.send(:define_method, method_id) do |args|
+        request(method_id.id2name.camelize, args)
+      end if json['output']['status'] == 1
 
-  # Labels documents as spam or nospam by taking into account their context.
-  #
-  def spam_detection(text)
-    RestClient.post "http://api.datumbox.com/1.0/SpamDetection.json", :api_key => @api_key, :text => text
+      return response
+    rescue
+      super
+    end
   end
-
-  # Classifies documents as adult or noadult based on their context.
-  #
-  def adult_content_detection(text)
-    RestClient.post "http://api.datumbox.com/1.0/AdultContentDetection.json", :api_key => @api_key, :text => text
-  end
-
-  # Assigns documents in 12 thematic categories based on ther keywords, idioms and jargon.
-  #
-  def topic_classification(text)
-    RestClient.post "http://api.datumbox.com/1.0/TopicClassification.json", :api_key => @api_key, :text => text
-  end
-
-  # Identifies the natural language of the given text based on its words and context.
-  #
-  def language_detection(text)
-    RestClient.post "http://api.datumbox.com/1.0/LanguageDetection.json", :api_key => @api_key, :text => text
-  end
-
-  # Classifies "text" as positive, negative or neutral.
-  #
-  def twitter_sentiment_analysis(text)
-    RestClient.post "http://api.datumbox.com/1.0/TwitterSentimentAnalysis.json", :api_key => @api_key, :text => text
-  end
-
-  # Enables you to extract from an arbitrary document all the keywords and word
-  # combinations along with their occurrences in the text.
-  #
-  def keyword_extraction(text, n)
-    RestClient.post "http://api.datumbox.com/1.0/KeywordExtraction.json", :api_key => @api_key, :text => text, :n => n
-  end
-
-  # Estimates the degree of similarity between two documents.
-  #
-  def document_similarity(original, copy)
-    RestClient.post "http://api.datumbox.com/1.0/DocumentSimilarity.json", :api_key => @api_key, :original => original, :copy => copy
-  end
-
 
 end
 
-puts Datumbox.new('').
-         document_similarity("This document is unique.", "No, bastard! This document here is unique!.")
+class String
+  def camelize
+    self.split("_").each {|s| s.capitalize! }.join("")
+  end
+  def camelize!
+    self.replace(self.split("_").each {|s| s.capitalize! }.join(""))
+  end
+end unless String.new.respond_to?(:camelize)
